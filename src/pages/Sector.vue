@@ -266,8 +266,9 @@
 <script lang="ts">
 import { defineComponent, computed, ref } from 'vue';
 // Import to enable auto placement of sector objects
-import { useOracleStore } from 'src/store/oracles';
+import { roll } from 'src/lib/oracles'; 
 import { Notify } from 'quasar';
+// -------------------------
 
 import {
   ERegion,
@@ -307,13 +308,9 @@ export default defineComponent({
   components: { IInput, HexMap, SSettlement, SNPC, SStar, SPlanet, SStarship, SDerelict, SCreature, SVault, SSighting },
   name: 'Sector',
   setup() {
-    // <--- LOGIC BLOCK FOR CODE TO AUTOMATICALLY PLACING STELLAR OBJECTS. DELETE IF UNWANTED --->
-    const oracles = useOracles();
-
-    /**
-     * @param target The object to update (e.g. the sector)
-     * @param type What to generate (currently only 'name')
-     */
+    // <--- LOGIC BLOCK FOR CODE TO AUTOMATICALLY PLACE STELLAR OBJECTS --->
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function autoGenerate(target: any, type: string) {
       if (!target) {
         Notify.create({ message: 'Target not found', color: 'negative' });
@@ -326,7 +323,10 @@ export default defineComponent({
         if (type === 'name') {
            // Rolls on the Settlement Name table. 
            // You can change this to 'Starforged/Space/Sector_Name' if that table exists in your data.
-           result = oracles.run('Starforged/Setting/Settlement_Name');
+           // Using 'roll' directly from library.
+           result = roll('Starforged/Setting/Settlement_Name');
+           
+           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
            target.name = result;
         }
 
@@ -337,6 +337,7 @@ export default defineComponent({
       }
     }
     // ---------------------------------
+
     const campaign = useCampaign();
     const config = useConfig();
     const showMapConfig = ref(false);
@@ -361,7 +362,7 @@ export default defineComponent({
       config.data.sector = 0;
       campaign.data.sectors.splice(d, 1);
     };
-
+    
     // Search stuff
     const searchText = ref('');
     const filters = ref([] as ESectorOpts[]);
