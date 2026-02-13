@@ -74,8 +74,28 @@
       <hex-map :searchResults="results" />
     </div>
 
+   //Sector rework. Changed from main branch.
     <div class="row q-gutter-sm q-mb-sm" v-if="$q.screen.gt.xs">
-      <i-input class="col" label="Sector name" v-model="campaign.data.sectors[config.data.sector].name" />
+      <q-input 
+        class="col" 
+        label="Sector name" 
+        v-model="campaign.data.sectors[config.data.sector].name" 
+        dense
+        standout="bg-blue-grey text-white"
+        :input-style="{ color: '#ECEFF4' }"
+      >
+        <template v-slot:append>
+          <q-btn 
+            icon="casino" 
+            flat 
+            dense 
+            color="primary"
+            @click="autoGenerate(campaign.data.sectors[config.data.sector], 'name')"
+            title="Auto-Generate Name"
+          />
+        </template>
+      </q-input>
+
       <i-input class="col" label="Search" v-model="searchText" clearable />
       <q-select
         class="col"
@@ -90,9 +110,28 @@
       />
       <q-btn class="col-shrink" flat dense icon="mdi-cog" @click="showMapConfig = true" />
     </div>
+
     <div v-else>
       <div class="row q-gutter-sm q-mb-sm">
-        <i-input class="col" label="Sector name" v-model="campaign.data.sectors[config.data.sector].name" />
+        <q-input 
+          class="col" 
+          label="Sector name" 
+          v-model="campaign.data.sectors[config.data.sector].name" 
+          dense
+          standout="bg-blue-grey text-white"
+          :input-style="{ color: '#ECEFF4' }"
+        >
+          <template v-slot:append>
+            <q-btn 
+              icon="casino" 
+              flat 
+              dense 
+              color="primary"
+              @click="autoGenerate(campaign.data.sectors[config.data.sector], 'name')"
+              title="Auto-Generate Name"
+            />
+          </template>
+        </q-input>
         <q-btn class="col-shrink" flat dense icon="mdi-cog" @click="showMapConfig = true" />
       </div>
       <div class="row q-gutter-sm q-mb-sm">
@@ -226,6 +265,9 @@
 
 <script lang="ts">
 import { defineComponent, computed, ref } from 'vue';
+// Import to enable auto placement of sector objects
+import { useOracleStore } from 'src/store/oracles';
+import { Notify } from 'quasar';
 
 import {
   ERegion,
@@ -265,6 +307,36 @@ export default defineComponent({
   components: { IInput, HexMap, SSettlement, SNPC, SStar, SPlanet, SStarship, SDerelict, SCreature, SVault, SSighting },
   name: 'Sector',
   setup() {
+    // <--- LOGIC BLOCK FOR CODE TO AUTOMATICALLY PLACING STELLAR OBJECTS. DELETE IF UNWANTED --->
+    const oracles = useOracles();
+
+    /**
+     * @param target The object to update (e.g. the sector)
+     * @param type What to generate (currently only 'name')
+     */
+    function autoGenerate(target: any, type: string) {
+      if (!target) {
+        Notify.create({ message: 'Target not found', color: 'negative' });
+        return;
+      }
+
+      let result = '';
+
+      try {
+        if (type === 'name') {
+           // Rolls on the Settlement Name table. 
+           // You can change this to 'Starforged/Space/Sector_Name' if that table exists in your data.
+           result = oracles.run('Starforged/Setting/Settlement_Name');
+           target.name = result;
+        }
+
+        Notify.create({ message: `Generated: ${result}`, color: 'positive' });
+      } catch (err) {
+        console.error(err);
+        Notify.create({ message: 'Error rolling oracle', color: 'negative' });
+      }
+    }
+    // ---------------------------------
     const campaign = useCampaign();
     const config = useConfig();
     const showMapConfig = ref(false);
@@ -448,6 +520,7 @@ export default defineComponent({
       applyFilters,
       ESectorOpts,
       results,
+      autoGenerate, // <--- ADDED FOR THE AUTOPLACEMENT PATCH- DELETE IF DESIRED
     };
   },
 });
